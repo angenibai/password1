@@ -1,0 +1,10 @@
+{
+    "name": "password1",
+    "description": "A locally hosted password manager for Chrome",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": ["storage", "scripting"],
+    "action": {
+        "default_popup": "popup.html"
+    }
+}
