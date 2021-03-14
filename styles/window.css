@@ -6,3 +6,17 @@
     max-width: 600px;
     margin: auto;
 }
+
+.btn-div {
+    margin: auto;
+    justify-content: center;
+}
+
+.btn-div > button {
+    margin: 10px;
+    max-width: 200px;
+}
+
+#newPassCard {
+    padding: 20px;
+}
