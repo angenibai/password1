@@ -58,6 +58,7 @@ const createFormField = (inputTitle, inputType, divID, inputID, helpText) => {
     setAttributes(input, {
         'type': inputType,
         'id': inputID,
+        'name': inputID,
         'class': 'form-control',
         'aria-described-by': helpID
     });
@@ -99,6 +100,10 @@ const renderWelcome = () => {
 
     const btn1 = makePrimaryBtn('button', 'welcome-add', 'Add a new password');
     btn1.classList.add('btn-block', 'col-sm');
+    btn1.addEventListener('click', () => {
+        renderNewPass();
+    });
+
     const btn2 = makePrimaryBtn('button', 'welcome-vault', 'Go to your passwords');
     btn2.classList.add('btn-block', 'col-sm');
 
@@ -111,6 +116,37 @@ const renderWelcome = () => {
     resetMain();
     const mainDiv = document.querySelector('#main-container');
     mainDiv.appendChild(welcomeCard);
+}
+
+// checking that data to add for new credential is valid
+const checkNewValid = () => {
+    // Unique title 1-50 characters
+
+    // username more than 1 character
+
+    // password matches guidelines
+
+    return true;
+}
+
+// saves new data to local storage
+const saveNewData = () => {
+    const form = document.querySelector('#newPwdForm');
+
+    const title = form.newTitle.value;
+    const username = form.newUsername.value;
+    const password = form.newPwd.value;
+    
+    chrome.storage.local.set({'dummy': 'username'}, () => {
+        console.log('success');
+    })
+
+    /*
+    chrome.storage.local.set({title: {'username': username, 'password': password}}, () => {
+        console.log('success:', title, username, password);
+    });
+    */
+
 }
 
 const renderNewPass = () => {
@@ -148,9 +184,19 @@ const renderNewPass = () => {
         'id': 'newSubmit'
     });
     const text = document.createTextNode('Add password');
+
     submit.appendChild(text);
 
     newForm.appendChild(submit);
+
+    // form behaviour
+    newForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        // validate input
+
+        // save input
+        saveNewData();
+    });
 
     cardBody.appendChild(newForm);
     newCard.appendChild(cardBody);
@@ -160,5 +206,4 @@ const renderNewPass = () => {
     mainDiv.appendChild(newCard);
 }
 
-//renderWelcome();
-renderNewPass();
+renderWelcome();
