@@ -106,6 +106,9 @@ const renderWelcome = () => {
 
     const btn2 = makePrimaryBtn('button', 'welcome-vault', 'Go to your passwords');
     btn2.classList.add('btn-block', 'col-sm');
+    btn2.addEventListener('click', () => {
+        renderVault();
+    });
 
     cardBody.appendChild(welcomeHeading);
     btnDiv.appendChild(btn1);
@@ -136,17 +139,14 @@ const saveNewData = () => {
     const title = form.newTitle.value;
     const username = form.newUsername.value;
     const password = form.newPwd.value;
+
+    // do some encryption
+
+    // current issue: assumes that all of local storage is dedicated to passwords
     
-    chrome.storage.local.set({'dummy': 'username'}, () => {
+    chrome.storage.local.set({[title]: {'username':username, 'password':password}}, () => {
         console.log('success');
     })
-
-    /*
-    chrome.storage.local.set({title: {'username': username, 'password': password}}, () => {
-        console.log('success:', title, username, password);
-    });
-    */
-
 }
 
 const renderNewPass = () => {
@@ -204,6 +204,109 @@ const renderNewPass = () => {
     resetMain();
     const mainDiv = document.querySelector('#main-container');
     mainDiv.appendChild(newCard);
+}
+
+const createPageButton = (text) => {
+    // <li class="page-item"><a class="page-link" href="#">1</a></li>
+    const pageItem = document.createElement('li');
+    pageItem.setAttribute('class', 'page-item');
+
+    const link = document.createElement('a');
+    setAttributes(link, {
+        'class': 'page-link',
+        'href': '#'
+    });
+    const linkText = document.createTextNode(text);
+    link.appendChild(linkText);
+    pageItem.appendChild(link);
+    return pageItem;
+}
+
+const renderVault = () => {
+    // search bar
+
+    const vaultCard = document.createElement('div');
+    setAttributes(vaultCard, {
+        'class': 'card',
+        'id': 'vaultCard'
+    });
+
+    let allEntries = chrome.storage.local.get(null, (result) => {
+        console.log(result);
+        return result;
+    });
+
+    console.log(allEntries);
+
+    // create nav button group
+    const pageNav = document.createElement('nav');
+    pageNav.setAttribute('aria-label', 'Vault page navigation');
+
+    const pagesList = document.createElement('ul');
+    pagesList.setAttribute('class', 'pagination');
+
+    const prev = document.createElement('li');
+    prev.setAttribute('class', 'page-item');
+    let link = document.createElement('a');
+    setAttributes(link, {
+        'class': 'page-link',
+        'href': '#',
+        'aria-label': 'Previous'
+    });
+    let span = document.createElement('span');
+    span.setAttribute('aria-hidden', 'true');
+    let text = document.createTextNode('<<');
+    span.appendChild(text);
+    link.appendChild(span);
+    prev.appendChild(link);
+    pagesList.appendChild(prev);
+
+    // do this in a loop for however many pages needed
+    let nextButton = createPageButton('1');
+    pagesList.append(nextButton);
+
+    // next button
+    const next = document.createElement('li');
+    next.setAttribute('class', 'page-item');
+    link = document.createElement('a');
+    setAttributes(link, {
+        'class': 'page-link',
+        'href': '#',
+        'aria-label': 'Next'
+    });
+    span = document.createElement('span');
+    span.setAttribute('aria-hidden', 'true');
+    text = document.createTextNode('>>');
+    span.appendChild(text);
+    link.appendChild(span);
+    next.appendChild(link);
+    pagesList.appendChild(next);
+
+    pageNav.appendChild(pagesList);
+
+    /*
+    <nav aria-label="Page navigation example">
+    <ul class="pagination">
+        <li class="page-item">
+        <a class="page-link" href="#" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+        </a>
+        </li>
+        <li class="page-item"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item">
+        <a class="page-link" href="#" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+        </a>
+        </li>
+    </ul>
+    </nav>
+    */
+    vaultCard.appendChild(pageNav);
+    resetMain();
+    const mainDiv = document.querySelector('#main-container');
+    mainDiv.appendChild(vaultCard);
 }
 
 renderWelcome();
