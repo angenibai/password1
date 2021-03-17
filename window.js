@@ -143,8 +143,18 @@ const saveNewData = () => {
     // do some encryption
 
     // current issue: assumes that all of local storage is dedicated to passwords
+    /*
+    const vaultObj = {
+        'title': title,
+        'username': username,
+        'password': password
+    };
+    let vault = await chrome.storage.local.get(['vault'], (object) => {
+        return object;
+    })
+    */
     
-    chrome.storage.local.set({[title]: {'username':username, 'password':password}}, () => {
+    chrome.storage.local.set({[title]: {username, password}}, () => {
         console.log('success');
     })
 }
@@ -222,6 +232,95 @@ const createPageButton = (text) => {
     return pageItem;
 }
 
+// renders the page which contains details for a particular entry
+const renderEntryDetails = (title) => {
+
+    const newCard = document.createElement('div');
+    setAttributes(newCard, {
+        'class': 'card',
+        'id': 'entryPageCard'
+    });
+
+    // link to go back
+    const backLink = document.createElement('a');
+    setAttributes(backLink, {
+        'href': '#',
+        'class': 'back-link'
+    });
+    const linkText = document.createTextNode('← Back to vault');
+    backLink.appendChild(linkText);
+    backLink.addEventListener('click', (event) =>{
+        event.preventDefault();
+        renderVault();
+    });
+    newCard.appendChild(backLink);
+
+    const heading = document.createElement('h1');
+    heading.setAttribute('class', 'header');
+    const headingText = document.createTextNode(title);
+    heading.appendChild(headingText);
+    newCard.appendChild(heading);
+
+    // retrieve relevant data from storage
+    const entryObj = {
+        'username': 'abc',
+        'password': 'cba'
+    };
+
+    // unencrypt the password
+
+    // render username and password
+    const cardBody = document.createElement('div');
+    cardBody.setAttribute('class', 'card-body');
+    const newForm = document.createElement('form');
+    newForm.setAttribute('id', 'displayPwdForm');
+
+    const userDetails = createFormField('Username', 'text', 'usernameDiv', 'displayUsername', '');
+    userDetails.querySelector('input').setAttribute('value', entryObj['username']);
+    // problem with this is that you can't copy paste from a password field
+    const pwdDetails = createFormField('Password', 'password', 'pwdDiv', 'displayPwd', '');
+    pwdDetails.querySelector('input').setAttribute('value', entryObj['username']);
+
+    newForm.appendChild(userDetails);
+    newForm.appendChild(pwdDetails);
+    cardBody.appendChild(newForm);
+
+    // delete option
+    const deleteButton = makePrimaryBtn('button', 'deleteEntry', 'Delete entry');
+    deleteButton.setAttribute('class', 'btn btn-danger');
+    deleteButton.addEventListener('click', () => {
+        // delete entry from storage
+
+        renderVault();
+        // add a thing to vault page about item being deleted
+    });
+    cardBody.appendChild(deleteButton);
+    // edit option?
+
+    newCard.appendChild(cardBody);
+    resetMain();
+    const mainDiv = document.querySelector('#main-container');
+    mainDiv.appendChild(newCard); 
+}
+
+// creates a list object for the vault entries list
+const createVaultEntry = (title) => {
+    const entryItem = document.createElement('li');
+    entryItem.setAttribute('class', 'list-group-item btn vault-entry');
+
+    const titleText = document.createTextNode(title);
+    entryItem.appendChild(titleText);
+
+    // when this vault entry gets clicked, it will serve the details for that entry
+    entryItem.addEventListener('click', (event) => {
+        event.preventDefault();
+        renderEntryDetails(title);
+    })
+
+    return entryItem;
+
+}
+
 const renderVault = () => {
     // search bar
 
@@ -231,12 +330,60 @@ const renderVault = () => {
         'id': 'vaultCard'
     });
 
+    const vaultHeading = document.createElement('h1');
+    setAttributes(vaultHeading, {
+        'class': 'header',
+        'id': 'vaultHeading'
+    });
+    const headingText = document.createTextNode('Your passwords');
+    vaultHeading.appendChild(headingText);
+    vaultCard.appendChild(vaultHeading);
+
+    // button for new password
+    const newBtn = makePrimaryBtn('button', 'newPwdFromVault', 'Add new password');
+    newBtn.setAttribute('class', 'btn btn-outline-primary');
+    newBtn.addEventListener('click', () => {
+        renderNewPass();
+    });
+    vaultCard.appendChild(newBtn);
+
+
+    // the entries
+    const entryGroup = document.createElement('ul');
+    setAttributes(entryGroup, {
+        'class': 'list-group list-group-flush',
+        'id': 'vaultEntriesList'
+    });
+    /*
     let allEntries = chrome.storage.local.get(null, (result) => {
         console.log(result);
         return result;
     });
+    */
+    // currently dummy data for all entries
+    let allEntries = {
+        "abc": {
+            "username": "cba",
+            "password": "bac"
+        },
+        "def": {
+            "username": "fed",
+            "password": "edf"
+        },
+        "ghi": {
+            "username": "ihg",
+            "password": "hgi"
+        }
+    };
 
-    console.log(allEntries);
+    let newEntry;
+    Object.keys(allEntries).sort().forEach((title) => {
+        newEntry = createVaultEntry(title);
+        entryGroup.appendChild(newEntry);
+    })
+
+    vaultCard.appendChild(entryGroup);
+
 
     // create nav button group
     const pageNav = document.createElement('nav');
@@ -284,29 +431,16 @@ const renderVault = () => {
 
     pageNav.appendChild(pagesList);
 
-    /*
-    <nav aria-label="Page navigation example">
-    <ul class="pagination">
-        <li class="page-item">
-        <a class="page-link" href="#" aria-label="Previous">
-            <span aria-hidden="true">&laquo;</span>
-        </a>
-        </li>
-        <li class="page-item"><a class="page-link" href="#">1</a></li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">3</a></li>
-        <li class="page-item">
-        <a class="page-link" href="#" aria-label="Next">
-            <span aria-hidden="true">&raquo;</span>
-        </a>
-        </li>
-    </ul>
-    </nav>
-    */
     vaultCard.appendChild(pageNav);
     resetMain();
     const mainDiv = document.querySelector('#main-container');
     mainDiv.appendChild(vaultCard);
 }
+
+// set listener for logo to bring back to welcome page
+document.querySelector('.navbar-brand').addEventListener('click', (event) => {
+    event.preventDefault();
+    renderWelcome();
+});
 
 renderWelcome();

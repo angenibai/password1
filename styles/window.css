@@ -5,6 +5,7 @@
 .card {
     max-width: 600px;
     margin: auto;
+    padding: 20px;
 }
 
 .btn-div {
@@ -17,6 +18,16 @@
     max-width: 200px;
 }
 
-#newPassCard {
-    padding: 20px;
+
+.list-group {
+    margin: 10px 0;
+}
+
+
+.vault-entry:hover {
+    background-color: lightgray;
+}
+
+#newPwdFromVault {
+    max-width: fit-content;
 }
