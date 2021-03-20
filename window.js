@@ -257,7 +257,7 @@ const renderEntryDetails = (title) => {
 
     const heading = document.createElement('h1');
     heading.setAttribute('class', 'header');
-    const headingText = document.createTextNode(title);
+    const headingText = document.createTextNode(`Credentials for: ${title}`);
     heading.appendChild(headingText);
     newCard.appendChild(heading);
 
@@ -277,9 +277,48 @@ const renderEntryDetails = (title) => {
 
     const userDetails = createFormField('Username', 'text', 'usernameDiv', 'displayUsername', '');
     userDetails.querySelector('input').setAttribute('value', entryObj['username']);
-    // problem with this is that you can't copy paste from a password field
-    const pwdDetails = createFormField('Password', 'password', 'pwdDiv', 'displayPwd', '');
-    pwdDetails.querySelector('input').setAttribute('value', entryObj['username']);
+    
+    const pwdDetails = document.createElement('div');
+    setAttributes(pwdDetails, {
+        'class': 'mb-3',
+        'id': 'pwdDiv'
+    });
+    const pwdLabel = document.createElement('label');
+    setAttributes(pwdLabel, {
+        'class': 'form-label',
+        'for': 'displayPwd'
+    });
+    pwdLabel.appendChild(document.createTextNode('Password'));
+    pwdDetails.appendChild(pwdLabel);
+
+    const inputGroup = document.createElement('div');
+    setAttributes(inputGroup, {
+        'class': 'input-group mb-3'
+    });
+    const pwdInput = document.createElement('input');
+    setAttributes(pwdInput, {
+        'type': 'password',
+        'id': 'displayPwd',
+        'name': 'displayPwd',
+        'class': 'form-control'
+    });
+    pwdInput.setAttribute('value', entryObj['username']);
+    inputGroup.appendChild(pwdInput);
+
+    const visibility = document.createElement('button');
+    setAttributes(visibility, {
+        'class': 'far fa-eye btn btn-outline-secondary',
+        'id': 'toggleVisibility',
+        'type': 'button'
+    });
+    visibility.addEventListener('click', (e) => {
+        const password = document.querySelector('#displayPwd');
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        visibility.classList.toggle('fa-eye-slash');
+    });
+    inputGroup.appendChild(visibility);
+    pwdDetails.appendChild(inputGroup);
 
     newForm.appendChild(userDetails);
     newForm.appendChild(pwdDetails);
