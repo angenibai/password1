@@ -133,7 +133,7 @@ const checkNewValid = () => {
 }
 
 // saves new data to local storage
-const saveNewData = () => {
+const saveNewData = async () => {
     const form = document.querySelector('#newPwdForm');
 
     const title = form.newTitle.value;
@@ -142,24 +142,55 @@ const saveNewData = () => {
 
     // do some encryption
 
-    // current issue: assumes that all of local storage is dedicated to passwords
-    /*
-    const vaultObj = {
-        'title': title,
-        'username': username,
-        'password': password
-    };
-    let vault = await chrome.storage.local.get(['vault'], (object) => {
-        return object;
-    })
-    */
-    
-    chrome.storage.local.set({[title]: {username, password}}, () => {
-        console.log('success');
+   
+    // allEntries is a semi-colon separated string 
+    // this should be hashed or something
+    let allEntries = await getFromLocal('allEntries');
+    allEntries = allEntries.allEntries ? allEntries.allEntries : "";
+
+    if (allEntries.includes(`${title};`)) {
+        // the title we're looking for does exist
+        throw "Title already exists"
+        
+    } else {
+        // add to the vault
+        let vault = await getFromLocal('vault');
+        vault = vault.vault;
+        console.log(vault);
+        if (vault) {
+            vault[title] = {username, password};
+        } else {
+            vault = {
+                [title]: {username, password}
+            };
+        }
+        await setToLocal('vault', vault);
+
+        allEntries += `${title};`;
+        await setToLocal('allEntries', allEntries);
+    }
+
+  
+}
+
+const setToLocal = async (key, val) => {
+    await new Promise(resolve => {
+        chrome.storage.local.set({[key]: val}, (r) => {
+            resolve(r);
+        });
     })
 }
 
-const renderNewPass = () => {
+const getFromLocal = async (key) => {
+    let val = await new Promise(resolve => {
+        chrome.storage.local.get([key], (obj) => {
+            resolve(obj);
+        }); 
+    })
+    return val;
+}
+
+const renderNewPass = async () => {
     const newCard = document.createElement('div');
     setAttributes(newCard, {
         'class': 'card',
@@ -205,7 +236,9 @@ const renderNewPass = () => {
         // validate input
 
         // save input
-        saveNewData();
+        // TODO: the new data doesn't show up until reload
+        saveNewData()
+            .then(renderVault());
     });
 
     cardBody.appendChild(newForm);
@@ -233,7 +266,7 @@ const createPageButton = (text) => {
 }
 
 // renders the page which contains details for a particular entry
-const renderEntryDetails = (title) => {
+const renderEntryDetails = async (title) => {
 
     const newCard = document.createElement('div');
     setAttributes(newCard, {
@@ -262,10 +295,9 @@ const renderEntryDetails = (title) => {
     newCard.appendChild(heading);
 
     // retrieve relevant data from storage
-    const entryObj = {
-        'username': 'abc',
-        'password': 'cba'
-    };
+    let vault = await getFromLocal('vault');
+    vault = vault.vault;
+    const entryObj = vault[title];
 
     // unencrypt the password
 
@@ -360,7 +392,7 @@ const createVaultEntry = (title) => {
 
 }
 
-const renderVault = () => {
+const renderVault = async () => {
     // search bar
 
     const vaultCard = document.createElement('div');
@@ -393,30 +425,12 @@ const renderVault = () => {
         'class': 'list-group list-group-flush',
         'id': 'vaultEntriesList'
     });
-    /*
-    let allEntries = chrome.storage.local.get(null, (result) => {
-        console.log(result);
-        return result;
-    });
-    */
-    // currently dummy data for all entries
-    let allEntries = {
-        "abc": {
-            "username": "cba",
-            "password": "bac"
-        },
-        "def": {
-            "username": "fed",
-            "password": "edf"
-        },
-        "ghi": {
-            "username": "ihg",
-            "password": "hgi"
-        }
-    };
+    
+    let vault = await getFromLocal('vault');
+    vault = vault.vault;
 
     let newEntry;
-    Object.keys(allEntries).sort().forEach((title) => {
+    Object.keys(vault).sort().forEach((title) => {
         newEntry = createVaultEntry(title);
         entryGroup.appendChild(newEntry);
     })
