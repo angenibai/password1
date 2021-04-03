@@ -1,0 +1,32 @@
+/*
+ * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+/******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/popup.js":
+/*!**********************!*\
+  !*** ./src/popup.js ***!
+  \**********************/
+/***/ (() => {
+
+eval("const setToLocal = async (key, val) => {\n    await new Promise(resolve => {\n        chrome.storage.local.set({[key]: val}, (r) => {\n            resolve(r);\n        });\n    })\n}\n\nconst getFromLocal = async (key) => {\n    let val = await new Promise(resolve => {\n        chrome.storage.local.get([key], (obj) => {\n            resolve(obj);\n        }); \n    })\n    return val;\n}\n\nconst removeFromLocal = async (key) => {\n    await new Promise(resolve => {\n        chrome.storage.local.remove([key], (r) => {\n            resolve(r);\n        });\n    });\n}\n\nconst goToWindow = () => {\n    chrome.tabs.create({active: true, url: '/window.html'});\n}\n\n// given popup id, reveals it and hides everything else\nconst revealPopup = (popup) => {\n    document.querySelectorAll('.popup-panel').forEach((panel) => {\n        if (panel.id === popup) {\n            panel.style.display = 'block';\n        } else {\n            panel.style.display = 'none';\n        }\n    });\n}\n\nconst renderRegister = () => {\n    revealPopup('registerPopup');\n}\n\nconst renderLogin = () => {\n    revealPopup('loginPopup');\n}\n\ndocument.querySelectorAll('.go-register').forEach((el) => {\n    el.addEventListener('click', (e) => {\n        e.preventDefault();\n        renderRegister();\n    });\n});\n\ndocument.querySelectorAll('.go-login').forEach((el) => {\n    el.addEventListener('click', (e) => {\n        e.preventDefault();\n        renderLogin();\n    });\n});\n\nconst onRego = async (regoForm) => {\n    if (regoForm.regoPwd.value !== regoForm.regoPwdConfirm.value) {\n        alert('Passwords must match');\n        return;\n    }\n\n    // check user does not exist already\n    let users = await getFromLocal('allUsers');\n    console.log(users);\n    users = users.allUsers ? users.allUsers : '';\n    console.log(users);\n    if (users.includes(`${regoForm.regoUser.value};`)) {\n        alert('Username already exists');\n        return;\n    }\n\n    // should do validation for username and password\n\n    // ready to add new user\n    users += `${regoForm.regoUser.value};`;\n    await setToLocal('allUsers', users);\n\n    // generate salt and login hash\n    let salt = regoForm.regoUser.value + Date.now().toString();\n    let hash = regoForm.regoPwd.value;\n\n    let logins = await getFromLocal('userAuth');\n    logins = logins.userAuth;\n    console.log(logins);\n    if (logins) {\n        logins[regoForm.regoUser.value] = {salt, hash};\n    } else {\n        logins = {\n            [regoForm.regoUser.value]: {\n                salt, hash\n            }\n        };\n    }\n\n    await setToLocal('userAuth', logins);\n    await setToLocal('currentSession', {\n        'user': regoForm.regoUser.value\n    });\n\n    regoForm.querySelectorAll('input').forEach((field) => {\n        field.value = '';\n    });\n\n    goToWindow();\n}\n\n\nconst regoForm = document.forms.register;\nregoForm.addEventListener('submit', (e) => {\n    e.preventDefault();\n    onRego(regoForm);\n});\n\nconst onLogin = async (loginForm) => {\n    let users = await getFromLocal('allUsers');\n    users = users.allUsers ? users.allUsers : '';\n\n    const userAttempt = loginForm.loginUser.value;\n\n    if (!users.includes(`${userAttempt};`)) {\n        alert('User not found');\n        return;\n    }\n\n    let logins = await getFromLocal('userAuth');\n    logins = logins.userAuth;\n\n    let password = loginForm.loginPwd.value;\n    const salt = logins[userAttempt].salt;\n\n    // find hash\n    const hash = password;\n\n    if (logins[userAttempt].hash !== hash) {\n        alert('Invalid password');\n        return;\n    }\n    // otherwise login success\n    await setToLocal('currentSession', {\n        'user': userAttempt\n    });\n    loginForm.querySelectorAll('input').forEach((field) => {\n        field.value = '';\n    });\n    goToWindow();\n}\n\nconst loginForm = document.forms.login;\nloginForm.addEventListener('submit', (e) => {\n    e.preventDefault();\n    onLogin(loginForm);\n});\n\nconst onLogout = async () => {\n    await removeFromLocal('currentSession');\n}\n\ndocument.querySelector('#logout').addEventListener('click', (e) => {\n    e.preventDefault();\n    onLogout();\n    renderInitial();\n});\n\n\nconst renderInitial = async () => {\n    let session = await getFromLocal('currentSession');\n    if (session.currentSession) {\n        const user = session.currentSession.user;\n        console.log(user);\n        const userSpan = document.querySelector('#loggedInUser');\n        if (userSpan.lastChild) {\n            userSpan.removeChild(userSpan.lastChild);\n        }\n        userSpan.appendChild(document.createTextNode(user));\n        revealPopup('loggedInPopup');\n    } else {\n        revealPopup('initialPopup');\n    }\n\n\n    let allUsers = await getFromLocal('allUsers');\n    if (!allUsers) {\n        setToLocal('allUsers', '');\n    }\n    let logins = await getFromLocal('userAuth');\n    if (!logins) {\n        setToLocal('userAuth', {});\n    }\n\n}\n\nrenderInitial();\n\n//# sourceURL=webpack://password1/./src/popup.js?");
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module can't be inlined because the eval devtool is used.
+/******/ 	var __webpack_exports__ = {};
+/******/ 	__webpack_modules__["./src/popup.js"]();
+/******/ 	
+/******/ })()
+;
