@@ -10,9 +10,56 @@
     <title>password1</title>
   </head>
   <body>
-    <div class="popup-panel">
+    <div class="popup-panel" id="initialPopup">
       <h1>password1</h1>
-      <button class="btn btn-primary" type="submit" id="login">Login</button>
+      <button class="btn btn-primary go-register" type="button">Register</button>
+      <button class="btn btn-primary go-login" type="button">Login</button>
+    </div>
+    <div class="popup-panel" id="loggedInPopup">
+      <h1>Logged in as <span id="loggedInUser"></span></h1>
+      <button class="btn btn-primary" type="button" id="logout">Log out</button>
+    </div>
+    <div class="popup-panel" id="registerPopup">
+      <h1>Register</h1>
+      <form name="register">
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control" id="regoUser" required>
+          <label for="regoUser">Username</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control" id="regoPwd" required>
+          <label for="regoPwd">Master password</label>
+        </div> 
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control" id="regoPwdConfirm" required>
+          <label for="regoPwdConfirm">Confirm password</label>
+        </div> 
+        <div class="mb-3">
+          <button type="submit" class="btn btn-primary">Register</button>
+        </div>
+      </form>
+      <div>
+        <p>Already have an account? <a class="go-login" href="">Login here</a></p>
+      </div>
+    </div>
+    <div class="popup-panel" id="loginPopup">
+      <h1>Login</h1>
+      <form name="login">
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control" id="loginUser" required>
+          <label for="loginUser">Username</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control" id="loginPwd" required>
+          <label for="loginPwd">Master password</label>
+        </div> 
+        <div class="mb-3">
+          <button type="submit" class="btn btn-primary">Login</button>
+        </div>
+      </form>
+      <div>
+        <p>Don't have an account yet? <a class="go-register" href="">Register here</a></p>
+      </div>
     </div>
 
     <script src="bootstrap-5.0.0-beta2-dist/js/bootstrap.bundle.min.js"></script> 

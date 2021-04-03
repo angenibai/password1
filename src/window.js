@@ -5,6 +5,36 @@ const setAttributes = (element, attributeObj) => {
     }
 }
 
+const setToLocal = async (key, val) => {
+    await new Promise(resolve => {
+        chrome.storage.local.set({[key]: val}, (r) => {
+            resolve(r);
+        });
+    })
+}
+
+const getFromLocal = async (key) => {
+    let val = await new Promise(resolve => {
+        chrome.storage.local.get([key], (obj) => {
+            resolve(obj);
+        }); 
+    })
+    return val;
+}
+
+const removeFromLocal = async (key) => {
+    await new Promise(resolve => {
+        chrome.storage.local.remove([key], (r) => {
+            resolve(r);
+        });
+    });
+}
+
+const getCurrentUser = async () => {
+    let session = await getFromLocal('currentSession');
+    return session.currentSession ? session.currentSession.user : null;
+}
+
 // makes a primary button given button type, id, and text for the button
 const makePrimaryBtn = (btnType, btnID, btnText) => {
     const newBtn = document.createElement('button');
@@ -32,6 +62,34 @@ const resetMain = () => {
     });
 
     main.appendChild(mainDiv);
+}
+
+// if not logged in, brings up not logged in page
+// otherwise returns the username
+const checkLoggedIn = async () => {
+    let session = await getFromLocal('currentSession');
+    if (!session.currentSession) {
+        const card = document.createElement('div');
+        setAttributes(card, {
+            'class': 'card text-center',
+            'id': 'loggedOutCard'
+        });
+
+        const cardBody = document.createElement('div');
+        cardBody.setAttribute('class', 'card-body');
+
+        const heading = document.createElement('h1');
+        heading.setAttribute('class', 'card-title');
+        const text = document.createTextNode('You are not logged in');
+        heading.appendChild(text);
+        cardBody.appendChild(heading);
+        card.appendChild(cardBody);
+        resetMain();
+        const mainDiv = document.querySelector('#main-container');
+        mainDiv.appendChild(card);
+        return false;
+    }
+    return session.currentSession.user;
 }
 
 // creates form field with label, input field and optionally help text
@@ -80,7 +138,14 @@ const createFormField = (inputTitle, inputType, divID, inputID, helpText) => {
     return newDiv;
 }
 
-const renderWelcome = () => {
+const renderWelcome = async () => {
+    resetMain();
+    // check logged in
+    const user = await checkLoggedIn();
+    if (!user) {
+        return;
+    }
+
     const welcomeCard = document.createElement('div');
     setAttributes(welcomeCard, {
         'class': 'card text-center',
@@ -92,6 +157,9 @@ const renderWelcome = () => {
 
     const welcomeHeading = document.createElement('h1');
     welcomeHeading.setAttribute('class', 'card-title');
+
+    
+
     const welcomeText = document.createTextNode('Welcome to your vault');
     welcomeHeading.appendChild(welcomeText);
 
@@ -107,7 +175,7 @@ const renderWelcome = () => {
     const btn2 = makePrimaryBtn('button', 'welcome-vault', 'Go to your passwords');
     btn2.classList.add('btn-block', 'col-sm');
     btn2.addEventListener('click', () => {
-        renderVault();
+        renderVault(user);
     });
 
     cardBody.appendChild(welcomeHeading);
@@ -116,7 +184,6 @@ const renderWelcome = () => {
     cardBody.append(btnDiv);
     welcomeCard.appendChild(cardBody);
 
-    resetMain();
     const mainDiv = document.querySelector('#main-container');
     mainDiv.appendChild(welcomeCard);
 }
@@ -134,6 +201,11 @@ const checkNewValid = () => {
 
 // saves new data to local storage and displays vault
 const saveNewData = async () => {
+    const user = await checkLoggedIn();
+    if (!user) {
+        return;
+    }
+    
     const form = document.querySelector('#newPwdForm');
 
     const title = form.newTitle.value;
@@ -145,17 +217,19 @@ const saveNewData = async () => {
    
     // allEntries is a semi-colon separated string 
     // this should be hashed or something
-    let allEntries = await getFromLocal('allEntries');
-    allEntries = allEntries.allEntries ? allEntries.allEntries : "";
+    const userEntries = `${user}AllEntries`;
+    let r = await getFromLocal(userEntries);
+    let allEntries = r[userEntries] ? r[userEntries] : "";
 
     if (allEntries.includes(`${title};`)) {
         // the title we're looking for does exist
-        throw "Title already exists"
+        alert("Title already exists");
         
     } else {
         // add to the vault
-        let vault = await getFromLocal('vault');
-        vault = vault.vault;
+        const userVault = `${user}Vault`;
+        let r = await getFromLocal(userVault);
+        let vault = r[userVault];
         console.log(vault);
         if (vault) {
             vault[title] = {username, password};
@@ -164,64 +238,52 @@ const saveNewData = async () => {
                 [title]: {username, password}
             };
         }
-        await setToLocal('vault', vault);
+        await setToLocal(userVault, vault);
 
         allEntries += `${title};`;
-        await setToLocal('allEntries', allEntries);
+        await setToLocal(userEntries, allEntries);
         console.log('set finished');
     }
     renderVault();
 }
 
 const deleteEntry = async (toDel) => {
-    let allEntries = await getFromLocal('allEntries');
-    allEntries = allEntries.allEntries ? allEntries.allEntries : "";
+    const user = await checkLoggedIn();
+    if (!user) {
+        return;
+    }
+
+    const userEntries = `${user}AllEntries`;
+    let r = await getFromLocal(userEntries);
+    let allEntries = r[userEntries] ? r[userEntries] : "";
 
     if (allEntries.includes(`${toDel};`)) {
         // can delete this entry
         // delete from vault
-        let vault = await getFromLocal('vault');
-        vault = vault.vault;
+        const userVault = `${user}Vault`;
+        let r = await getFromLocal(userVault);
+        let vault = r[userVault];
         delete vault[toDel];
-        await setToLocal('vault', vault);
+        await setToLocal(userVault, vault);
 
         // remove from all entries
         console.log(`${toDel};`);
         allEntries = allEntries.replace(`${toDel};`, '');
         console.log(allEntries);
-        await setToLocal('allEntries', allEntries);
+        await setToLocal(userEntries, allEntries);
     } else {
-        throw "Title does not exist";
+        alert("Title does not exist");
     }
     renderVault();
 }
 
-const setToLocal = async (key, val) => {
-    await new Promise(resolve => {
-        chrome.storage.local.set({[key]: val}, (r) => {
-            resolve(r);
-        });
-    })
-}
 
-const getFromLocal = async (key) => {
-    let val = await new Promise(resolve => {
-        chrome.storage.local.get([key], (obj) => {
-            resolve(obj);
-        }); 
-    })
-    return val;
-}
-
-const removeFromLocal = async (key) => {
-    await new Promise(resolve => {
-        chrome.storage.local.remove([key], (r) => {
-            resolve(r);
-        });
-    });
-}
 
 const renderNewPass = async () => {
+    const user = await checkLoggedIn();
+    if (!user) {
+        return;
+    }
     const newCard = document.createElement('div');
     setAttributes(newCard, {
         'class': 'card',
@@ -296,6 +358,10 @@ const createPageButton = (text) => {
 
 // renders the page which contains details for a particular entry
 const renderEntryDetails = async (title) => {
+    const user = await checkLoggedIn();
+    if (!user) {
+        return;
+    }
 
     const newCard = document.createElement('div');
     setAttributes(newCard, {
@@ -324,8 +390,9 @@ const renderEntryDetails = async (title) => {
     newCard.appendChild(heading);
 
     // retrieve relevant data from storage
-    let vault = await getFromLocal('vault');
-    vault = vault.vault;
+    const userVault = `${user}Vault`;
+    let r = await getFromLocal(userVault);
+    let vault = r[userVault];
     const entryObj = vault[title];
 
     // unencrypt the password
@@ -373,6 +440,8 @@ const renderEntryDetails = async (title) => {
         'type': 'button'
     });
     visibility.addEventListener('click', (e) => {
+        checkLoggedIn();
+        
         const password = document.querySelector('#displayPwd');
         const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
         password.setAttribute('type', type);
@@ -422,6 +491,10 @@ const createVaultEntry = (title) => {
 }
 
 const renderVault = async () => {
+    const user = await checkLoggedIn();
+    if (!user) {
+        return;
+    }
     // search bar
 
     const vaultCard = document.createElement('div');
@@ -455,8 +528,9 @@ const renderVault = async () => {
         'id': 'vaultEntriesList'
     });
     
-    let vault = await getFromLocal('vault');
-    vault = vault.vault;
+    const userVault = `${user}Vault`;
+    let r = await getFromLocal(userVault);
+    let vault = r[userVault];
     console.log('rendering vault');
     console.log(vault);
     if (vault) {
