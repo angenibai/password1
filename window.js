@@ -132,7 +132,7 @@ const checkNewValid = () => {
     return true;
 }
 
-// saves new data to local storage
+// saves new data to local storage and displays vault
 const saveNewData = async () => {
     const form = document.querySelector('#newPwdForm');
 
@@ -168,9 +168,32 @@ const saveNewData = async () => {
 
         allEntries += `${title};`;
         await setToLocal('allEntries', allEntries);
+        console.log('set finished');
     }
+    renderVault();
+}
 
-  
+const deleteEntry = async (toDel) => {
+    let allEntries = await getFromLocal('allEntries');
+    allEntries = allEntries.allEntries ? allEntries.allEntries : "";
+
+    if (allEntries.includes(`${toDel};`)) {
+        // can delete this entry
+        // delete from vault
+        let vault = await getFromLocal('vault');
+        vault = vault.vault;
+        delete vault[toDel];
+        await setToLocal('vault', vault);
+
+        // remove from all entries
+        console.log(`${toDel};`);
+        allEntries = allEntries.replace(`${toDel};`, '');
+        console.log(allEntries);
+        await setToLocal('allEntries', allEntries);
+    } else {
+        throw "Title does not exist";
+    }
+    renderVault();
 }
 
 const setToLocal = async (key, val) => {
@@ -188,6 +211,14 @@ const getFromLocal = async (key) => {
         }); 
     })
     return val;
+}
+
+const removeFromLocal = async (key) => {
+    await new Promise(resolve => {
+        chrome.storage.local.remove([key], (r) => {
+            resolve(r);
+        });
+    });
 }
 
 const renderNewPass = async () => {
@@ -236,9 +267,7 @@ const renderNewPass = async () => {
         // validate input
 
         // save input
-        // TODO: the new data doesn't show up until reload
         saveNewData()
-            .then(renderVault());
     });
 
     cardBody.appendChild(newForm);
@@ -361,8 +390,8 @@ const renderEntryDetails = async (title) => {
     deleteButton.setAttribute('class', 'btn btn-danger');
     deleteButton.addEventListener('click', () => {
         // delete entry from storage
+        deleteEntry(title);
 
-        renderVault();
         // add a thing to vault page about item being deleted
     });
     cardBody.appendChild(deleteButton);
@@ -428,12 +457,16 @@ const renderVault = async () => {
     
     let vault = await getFromLocal('vault');
     vault = vault.vault;
-
-    let newEntry;
-    Object.keys(vault).sort().forEach((title) => {
-        newEntry = createVaultEntry(title);
-        entryGroup.appendChild(newEntry);
-    })
+    console.log('rendering vault');
+    console.log(vault);
+    if (vault) {
+        let newEntry;
+        Object.keys(vault).sort().forEach((title) => {
+            newEntry = createVaultEntry(title);
+            entryGroup.appendChild(newEntry);
+        });
+    }
+    
 
     vaultCard.appendChild(entryGroup);
 
