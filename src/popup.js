@@ -1,27 +1,4 @@
-const setToLocal = async (key, val) => {
-    await new Promise(resolve => {
-        chrome.storage.local.set({[key]: val}, (r) => {
-            resolve(r);
-        });
-    })
-}
-
-const getFromLocal = async (key) => {
-    let val = await new Promise(resolve => {
-        chrome.storage.local.get([key], (obj) => {
-            resolve(obj);
-        }); 
-    })
-    return val;
-}
-
-const removeFromLocal = async (key) => {
-    await new Promise(resolve => {
-        chrome.storage.local.remove([key], (r) => {
-            resolve(r);
-        });
-    });
-}
+import { setToLocal, getFromLocal, removeFromLocal } from './storage.js';
 
 const goToWindow = () => {
     chrome.tabs.create({active: true, url: '/window.html'});

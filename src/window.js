@@ -1,53 +1,6 @@
-// helper function to set multiple attributes at once
-const setAttributes = (element, attributeObj) => {
-    for (const [attr, val] of Object.entries(attributeObj)) {
-        element.setAttribute(attr, val);
-    }
-}
-
-const setToLocal = async (key, val) => {
-    await new Promise(resolve => {
-        chrome.storage.local.set({[key]: val}, (r) => {
-            resolve(r);
-        });
-    })
-}
-
-const getFromLocal = async (key) => {
-    let val = await new Promise(resolve => {
-        chrome.storage.local.get([key], (obj) => {
-            resolve(obj);
-        }); 
-    })
-    return val;
-}
-
-const removeFromLocal = async (key) => {
-    await new Promise(resolve => {
-        chrome.storage.local.remove([key], (r) => {
-            resolve(r);
-        });
-    });
-}
-
-const getCurrentUser = async () => {
-    let session = await getFromLocal('currentSession');
-    return session.currentSession ? session.currentSession.user : null;
-}
-
-// makes a primary button given button type, id, and text for the button
-const makePrimaryBtn = (btnType, btnID, btnText) => {
-    const newBtn = document.createElement('button');
-    setAttributes(newBtn, {
-        'type': btnType,
-        'class': 'btn btn-primary',
-        'id': btnID
-    });
-    const text = document.createTextNode(btnText);
-    newBtn.appendChild(text);
-
-    return newBtn;
-}
+import { setAttributes } from './helpers.js';
+import { getFromLocal, setToLocal } from './storage.js';
+import { makePrimaryBtn, createFormField } from './components.js';
 
 // resets the main element to contain an empty main div container
 const resetMain = () => {
@@ -90,52 +43,6 @@ const checkLoggedIn = async () => {
         return false;
     }
     return session.currentSession.user;
-}
-
-// creates form field with label, input field and optionally help text
-const createFormField = (inputTitle, inputType, divID, inputID, helpText) => {
-    const newDiv = document.createElement('div');
-    setAttributes(newDiv, {
-        'class': 'mb-3',
-        'id': divID
-    });
-
-    // label
-    const label = document.createElement('label');
-    setAttributes(label, {
-        'class': 'form-label',
-        'for': inputID
-    });
-    let text = document.createTextNode(inputTitle);
-    label.appendChild(text);
-
-    const helpID = inputID + 'Help';
-
-    // input field
-    const input = document.createElement('input');
-    setAttributes(input, {
-        'type': inputType,
-        'id': inputID,
-        'name': inputID,
-        'class': 'form-control',
-        'aria-described-by': helpID
-    });
-
-    // help text
-    const help = document.createElement('div');
-    setAttributes(help, {
-        'id': helpID,
-        'class': 'form-text'
-    });
-    text = document.createTextNode(helpText);
-    help.appendChild(text);
-
-    // append everything
-    newDiv.appendChild(label);
-    newDiv.appendChild(input);
-    newDiv.appendChild(help);
-
-    return newDiv;
 }
 
 const renderWelcome = async () => {
