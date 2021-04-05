@@ -1,4 +1,4 @@
-import { setAttributes } from './helpers.js';
+import { authenticate, setAttributes } from './helpers.js';
 import { getFromLocal, setToLocal } from './storage.js';
 import { makePrimaryBtn, createFormField } from './components.js';
 
@@ -43,6 +43,79 @@ const checkLoggedIn = async () => {
         return false;
     }
     return session.currentSession.user;
+}
+
+const onSubmitPwd = async (modal, user, successFunc, args) => {
+    const form = document.forms.reenterPwd;
+
+    const authenticated = await authenticate(form.reenteredPwd.value, user);
+    if (authenticated) {
+        form.reenteredPwd.value = '';
+        modal.hide();
+        if (args.length === 1) {
+            successFunc(args[0]);
+        } else if (args.length === 0) {
+            successFunc();
+        } else {
+            alert('I did not hard code this');
+        }
+    } else {
+        alert('Invalid password');
+    } 
+}
+
+const makeModalForm = () => {
+    const form = document.createElement('form');
+    form.setAttribute('name', 'reenterPwd');
+
+    const inputDiv = document.createElement('div');
+    inputDiv.setAttribute('class', 'mb-3');
+    const label = document.createElement('label');
+    setAttributes(label, {
+        'for': 'reenteredPwd',
+        'class': 'col-form-label'
+    });
+    label.appendChild(document.createTextNode('Master password:'));
+    inputDiv.appendChild(label);
+    const input = document.createElement('input');
+    setAttributes(input, {
+        'type': 'password',
+        'class': 'form-control',
+        'id': 'reenteredPwd',
+        'required': 'true'
+    });
+    inputDiv.appendChild(input);
+    form.appendChild(inputDiv);
+
+    const submit = document.createElement('button');
+    setAttributes(submit, {
+        'type': 'submit',
+        'class': 'btn btn-primary'
+    });
+    submit.appendChild(document.createTextNode('Confirm'));
+    form.appendChild(submit);
+
+    return form;
+}
+
+const passwordGateway = (user, successFunc, args) => {
+
+    const modalBody = document.querySelector('.modal-body');
+    while (modalBody.lastChild) {
+        modalBody.removeChild(modalBody.lastChild);
+    }
+    modalBody.appendChild(makeModalForm());
+
+    const modal = new bootstrap.Modal(document.querySelector('#reenterPwdModal'));
+    modal.show();
+   
+    const form = document.forms.reenterPwd;
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        onSubmitPwd(modal, user, successFunc, args);
+    });
 }
 
 const renderWelcome = async () => {
@@ -137,7 +210,6 @@ const saveNewData = async () => {
         const userVault = `${user}Vault`;
         let r = await getFromLocal(userVault);
         let vault = r[userVault];
-        console.log(vault);
         if (vault) {
             vault[title] = {username, password};
         } else {
@@ -149,7 +221,6 @@ const saveNewData = async () => {
 
         allEntries += `${title};`;
         await setToLocal(userEntries, allEntries);
-        console.log('set finished');
     }
     renderVault();
 }
@@ -174,9 +245,7 @@ const deleteEntry = async (toDel) => {
         await setToLocal(userVault, vault);
 
         // remove from all entries
-        console.log(`${toDel};`);
         allEntries = allEntries.replace(`${toDel};`, '');
-        console.log(allEntries);
         await setToLocal(userEntries, allEntries);
     } else {
         alert("Title does not exist");
@@ -222,7 +291,7 @@ const renderNewPass = async () => {
     setAttributes(submit, {
         'class': 'btn btn-primary',
         'type': 'submit',
-        'id': 'newSubmit'
+        'id': 'newSubmit',
     });
     const text = document.createTextNode('Add password');
 
@@ -235,8 +304,9 @@ const renderNewPass = async () => {
         event.preventDefault();
         // validate input
 
-        // save input
-        saveNewData()
+        // open modal
+        passwordGateway(user, saveNewData, []);
+        //saveNewData()
     });
 
     cardBody.appendChild(newForm);
@@ -366,7 +436,9 @@ const renderEntryDetails = async (title) => {
     deleteButton.setAttribute('class', 'btn btn-danger');
     deleteButton.addEventListener('click', () => {
         // delete entry from storage
-        deleteEntry(title);
+        // require password to delete item
+        passwordGateway(user, deleteEntry, [title]);
+        //deleteEntry(title);
 
         // add a thing to vault page about item being deleted
     });
@@ -380,9 +452,12 @@ const renderEntryDetails = async (title) => {
 }
 
 // creates a list object for the vault entries list
-const createVaultEntry = (title) => {
+const createVaultEntry = (title, user) => {
     const entryItem = document.createElement('li');
     entryItem.setAttribute('class', 'list-group-item btn vault-entry');
+    setAttributes(entryItem, {
+        'class': 'list-group-item btn vault-entry',
+    });
 
     const titleText = document.createTextNode(title);
     entryItem.appendChild(titleText);
@@ -390,7 +465,9 @@ const createVaultEntry = (title) => {
     // when this vault entry gets clicked, it will serve the details for that entry
     entryItem.addEventListener('click', (event) => {
         event.preventDefault();
-        renderEntryDetails(title);
+
+        // TODO put this behind password
+        passwordGateway(user, renderEntryDetails, [title]);
     })
 
     return entryItem;
@@ -443,7 +520,7 @@ const renderVault = async () => {
     if (vault) {
         let newEntry;
         Object.keys(vault).sort().forEach((title) => {
-            newEntry = createVaultEntry(title);
+            newEntry = createVaultEntry(title, user);
             entryGroup.appendChild(newEntry);
         });
     }

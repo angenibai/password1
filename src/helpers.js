@@ -44,7 +44,6 @@ export const authenticate = async (tryPass, user) => {
     }
 
     const curHash = passToLoginHash(tryPass, loginAuth.salt, user);
-    console.log(curHash);
 
     return loginAuth.hash === curHash;
 }

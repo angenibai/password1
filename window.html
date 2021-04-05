@@ -25,6 +25,25 @@
         <div class="container" id="main-container">
         </div>
     </main>
+    <div class="modal fade" id="reenterPwdModal" tabindex="-1" aria-labelledby="reenterPwdLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="reenterPwdLabel">Re-enter master password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form name="reenterPwd">
+              <div class="mb-3">
+                <label for="reenteredPwd" class="col-form-label">Master password:</label>
+                <input type="password" class="form-control" id="reenteredPwd" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Confirm</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="bootstrap-5.0.0-beta2-dist/js/bootstrap.bundle.min.js"></script> 
     <script src="dist/window.js"></script>
