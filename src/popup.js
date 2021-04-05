@@ -1,4 +1,7 @@
+import { authenticate, createLoginSalt, passToLoginHash } from './helpers.js';
 import { setToLocal, getFromLocal, removeFromLocal } from './storage.js';
+
+
 
 const goToWindow = () => {
     chrome.tabs.create({active: true, url: '/window.html'});
@@ -43,12 +46,14 @@ const onRego = async (regoForm) => {
         return;
     }
 
+    const username = regoForm.regoUser.value;
+
     // check user does not exist already
     let users = await getFromLocal('allUsers');
     console.log(users);
     users = users.allUsers ? users.allUsers : '';
     console.log(users);
-    if (users.includes(`${regoForm.regoUser.value};`)) {
+    if (users.includes(`${username};`)) {
         alert('Username already exists');
         return;
     }
@@ -56,12 +61,11 @@ const onRego = async (regoForm) => {
     // should do validation for username and password
 
     // ready to add new user
-    users += `${regoForm.regoUser.value};`;
-    await setToLocal('allUsers', users);
+    users += `${username};`;
 
     // generate salt and login hash
-    let salt = regoForm.regoUser.value + Date.now().toString();
-    let hash = regoForm.regoPwd.value;
+    const salt = createLoginSalt(username);
+    const hash = passToLoginHash(regoForm.regoPwd.value, salt, username);
 
     let logins = await getFromLocal('userAuth');
     logins = logins.userAuth;
@@ -76,9 +80,10 @@ const onRego = async (regoForm) => {
         };
     }
 
+    await setToLocal('allUsers', users);
     await setToLocal('userAuth', logins);
     await setToLocal('currentSession', {
-        'user': regoForm.regoUser.value
+        'user': username
     });
 
     regoForm.querySelectorAll('input').forEach((field) => {
@@ -106,19 +111,12 @@ const onLogin = async (loginForm) => {
         return;
     }
 
-    let logins = await getFromLocal('userAuth');
-    logins = logins.userAuth;
-
-    let password = loginForm.loginPwd.value;
-    const salt = logins[userAttempt].salt;
-
-    // find hash
-    const hash = password;
-
-    if (logins[userAttempt].hash !== hash) {
+    const authenticated = await authenticate(loginForm.loginPwd.value, loginForm.loginUser.value);
+    if (!authenticated) {
         alert('Invalid password');
         return;
     }
+    
     // otherwise login success
     await setToLocal('currentSession', {
         'user': userAttempt

@@ -9,6 +9,11 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js'
+  },
+  resolve: {
+    fallback: {
+      'crypto': false
+    }
   }
   
 };

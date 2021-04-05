@@ -24,6 +24,25 @@ export const removeFromLocal = async (key) => {
 }
 
 export const getCurrentUser = async () => {
-    let session = await getFromLocal('currentSession');
-    return session.currentSession ? session.currentSession.user : null;
+    const r = await getFromLocal('currentSession');
+    if (r.currentSession) {
+        return r.currentSession.user;
+    } else {
+        return null;
+        // throw "current session not found"
+    }
+}
+
+/**
+ * Returns object with the {hash, salt} corresponding to the input user
+ */
+export const getUserAuthDetails = async (user) => {
+   
+    const r = await getFromLocal('userAuth');
+    if (!r.userAuth) {
+        //return null;
+        throw "userAuth doesn't exist in database";
+    }
+    return r.userAuth[user];
+
 }
