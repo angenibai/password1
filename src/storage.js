@@ -46,3 +46,16 @@ export const getUserAuthDetails = async (user) => {
     return r.userAuth[user];
 
 }
+
+export const getVaultData = async (user, title) => {
+    const userVault = `${user}Vault`;
+    let r = await getFromLocal(userVault);
+    if (!r[userVault]) {
+        throw "Your vault doesn't exist in database";
+    }
+    const entryObj = r[userVault][title];
+    if (!entryObj) {
+        throw "This entry doesn't exist in database";
+    }
+    return entryObj;
+}

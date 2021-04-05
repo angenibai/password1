@@ -1,6 +1,8 @@
-import { authenticate, setAttributes } from './helpers.js';
-import { getFromLocal, setToLocal } from './storage.js';
+import { authenticate, createMasterKey, decrypt, encrypt, setAttributes } from './helpers.js';
+import { getFromLocal, getVaultData, setToLocal } from './storage.js';
 import { makePrimaryBtn, createFormField } from './components.js';
+const CryptoJS = require('crypto-js');
+
 
 // resets the main element to contain an empty main div container
 const resetMain = () => {
@@ -46,19 +48,24 @@ const checkLoggedIn = async () => {
 }
 
 const onSubmitPwd = async (modal, user, successFunc, args) => {
+    console.log(successFunc);
     const form = document.forms.reenterPwd;
 
     const authenticated = await authenticate(form.reenteredPwd.value, user);
     if (authenticated) {
+        const key = createMasterKey(form.reenteredPwd.value, user);
         form.reenteredPwd.value = '';
         modal.hide();
-        if (args.length === 1) {
-            successFunc(args[0]);
-        } else if (args.length === 0) {
-            successFunc();
-        } else {
-            alert('I did not hard code this');
+        switch (successFunc) {
+            case 'saveNewData': saveNewData(key);
+            break;
+            case 'deleteEntry': deleteEntry(args[0]);
+            break;
+            case 'renderEntryDetails': renderEntryDetails(key, args[0]);
+            break;
+            default: alert("Didn't hard-code this oops");
         }
+       
     } else {
         alert('Invalid password');
     } 
@@ -180,7 +187,7 @@ const checkNewValid = () => {
 }
 
 // saves new data to local storage and displays vault
-const saveNewData = async () => {
+const saveNewData = async (key) => {
     const user = await checkLoggedIn();
     if (!user) {
         return;
@@ -190,9 +197,9 @@ const saveNewData = async () => {
 
     const title = form.newTitle.value;
     const username = form.newUsername.value;
-    const password = form.newPwd.value;
+    const password = encrypt(form.newPwd.value, key).toString();
 
-    // do some encryption
+    console.log(password);
 
    
     // allEntries is a semi-colon separated string 
@@ -305,7 +312,7 @@ const renderNewPass = async () => {
         // validate input
 
         // open modal
-        passwordGateway(user, saveNewData, []);
+        passwordGateway(user, "saveNewData", []);
         //saveNewData()
     });
 
@@ -334,7 +341,7 @@ const createPageButton = (text) => {
 }
 
 // renders the page which contains details for a particular entry
-const renderEntryDetails = async (title) => {
+const renderEntryDetails = async (key, title) => {
     const user = await checkLoggedIn();
     if (!user) {
         return;
@@ -367,12 +374,11 @@ const renderEntryDetails = async (title) => {
     newCard.appendChild(heading);
 
     // retrieve relevant data from storage
-    const userVault = `${user}Vault`;
-    let r = await getFromLocal(userVault);
-    let vault = r[userVault];
-    const entryObj = vault[title];
+    const entryObj = await getVaultData(user, title);
 
     // unencrypt the password
+    let password = decrypt(entryObj.password, key).toString(CryptoJS.enc.Utf8);
+    console.log(password);
 
     // render username and password
     const cardBody = document.createElement('div');
@@ -407,7 +413,8 @@ const renderEntryDetails = async (title) => {
         'name': 'displayPwd',
         'class': 'form-control'
     });
-    pwdInput.setAttribute('value', entryObj['username']);
+    // filling in password
+    pwdInput.setAttribute('value', password);
     inputGroup.appendChild(pwdInput);
 
     const visibility = document.createElement('button');
@@ -437,7 +444,7 @@ const renderEntryDetails = async (title) => {
     deleteButton.addEventListener('click', () => {
         // delete entry from storage
         // require password to delete item
-        passwordGateway(user, deleteEntry, [title]);
+        passwordGateway(user, "deleteEntry", [title]);
         //deleteEntry(title);
 
         // add a thing to vault page about item being deleted
@@ -467,7 +474,7 @@ const createVaultEntry = (title, user) => {
         event.preventDefault();
 
         // TODO put this behind password
-        passwordGateway(user, renderEntryDetails, [title]);
+        passwordGateway(user, "renderEntryDetails", [title]);
     })
 
     return entryItem;
