@@ -127,3 +127,9 @@ export const masterPwdValid = (input) => {
         throw "Master password must contain at least one number";
     }
 }
+
+export const randomString = (length) => {
+    let string = CryptoJS.lib.WordArray.random(length);
+    string = string.toString(CryptoJS.enc.Base64)
+    return string.slice(0, -2);
+}

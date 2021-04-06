@@ -1,4 +1,4 @@
-import { authenticate, createMasterKey, decrypt, encrypt, inputValid, setAttributes } from './helpers.js';
+import { authenticate, createMasterKey, decrypt, encrypt, inputValid, randomString, setAttributes } from './helpers.js';
 import { getFromLocal, getVaultData, setToLocal } from './storage.js';
 import { makePrimaryBtn, createFormField } from './components.js';
 const CryptoJS = require('crypto-js');
@@ -282,11 +282,52 @@ const renderNewPass = async () => {
     let newInputs = [];
     newInputs.push(createFormField('Title', 'text', 'titleDiv', 'newTitle', 'Required: title to identify your credentials'));
     newInputs.push(createFormField('Username', 'text', 'usernameDiv', 'newUsername','Username for this account'));
-    newInputs.push(createFormField('Password', 'password', 'pwdDiv', 'newPwd', 'Required: password for this account'));
+
+    // password input includes buttons for visibility and generate password
+    const passwordField = createFormField('Password', 'password', 'pwdDiv', 'newPwd', 'Required: password for this account');
+    const inputGroup = document.createElement('div');
+    inputGroup.setAttribute('class', 'input-group');
+    inputGroup.appendChild(passwordField.childNodes[1]);
+
+    const visibility = document.createElement('button');
+    setAttributes(visibility, {
+        'class': 'far fa-eye btn btn-outline-secondary',
+        'id': 'toggleVisibility',
+        'type': 'button'
+    });
+    visibility.addEventListener('click', (e) => {
+        checkLoggedIn();
+        
+        const password = document.querySelector('#newPwd');
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        visibility.classList.toggle('fa-eye-slash');
+    });
+    inputGroup.appendChild(visibility);
+    // add a generate password thing here
+    const generate = document.createElement('button');
+    setAttributes(generate, {
+        'class': 'btn btn-outline-secondary',
+        'id': 'generatePassword',
+        'type': 'button'
+    });
+    const syncIcon = document.createElement('img');
+    setAttributes(syncIcon, {
+        'src': '../assets/sync-alt-solid.svg'
+    });
+    generate.appendChild(syncIcon);
+    generate.addEventListener('click', (e) => {
+        checkLoggedIn();
+        inputGroup.querySelector('#newPwd').value = randomString(16);
+    });
+    inputGroup.appendChild(generate);
+
+    passwordField.replaceChild(inputGroup, passwordField.childNodes[1]);
 
     newInputs.forEach((input) => {
         newForm.appendChild(input);
     });
+    newForm.appendChild(passwordField);
 
     // add submit button
     const submit = document.createElement('button');
@@ -316,7 +357,6 @@ const renderNewPass = async () => {
 
         // open modal
         passwordGateway(user, "saveNewData", []);
-        //saveNewData()
     });
 
     cardBody.appendChild(newForm);
@@ -328,7 +368,6 @@ const renderNewPass = async () => {
 }
 
 const createPageButton = (text) => {
-    // <li class="page-item"><a class="page-link" href="#">1</a></li>
     const pageItem = document.createElement('li');
     pageItem.setAttribute('class', 'page-item');
 
@@ -449,7 +488,6 @@ const renderEntryDetails = async (key, title) => {
         // delete entry from storage
         // require password to delete item
         passwordGateway(user, "deleteEntry", [title]);
-        //deleteEntry(title);
 
         // add a thing to vault page about item being deleted
     });

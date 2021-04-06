@@ -31,3 +31,11 @@
 #newPwdFromVault {
     max-width: fit-content;
 }
+
+#generatePassword {
+    padding-top: .2rem;
+}
+
+#generatePassword > img {
+    width: 1rem;
+}
