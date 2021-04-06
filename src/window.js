@@ -1,4 +1,4 @@
-import { authenticate, createMasterKey, decrypt, encrypt, setAttributes } from './helpers.js';
+import { authenticate, createMasterKey, decrypt, encrypt, inputValid, setAttributes } from './helpers.js';
 import { getFromLocal, getVaultData, setToLocal } from './storage.js';
 import { makePrimaryBtn, createFormField } from './components.js';
 const CryptoJS = require('crypto-js');
@@ -52,8 +52,11 @@ const onSubmitPwd = async (modal, user, successFunc, args) => {
     const form = document.forms.reenterPwd;
 
     const authenticated = await authenticate(form.reenteredPwd.value, user);
+    console.log('authentication');
     if (authenticated) {
+        console.log('authenticated');
         const key = createMasterKey(form.reenteredPwd.value, user);
+        console.log('key found');
         form.reenteredPwd.value = '';
         modal.hide();
         switch (successFunc) {
@@ -175,16 +178,6 @@ const renderWelcome = async () => {
     mainDiv.appendChild(welcomeCard);
 }
 
-// checking that data to add for new credential is valid
-const checkNewValid = () => {
-    // Unique title 1-50 characters
-
-    // username more than 1 character
-
-    // password matches guidelines
-
-    return true;
-}
 
 // saves new data to local storage and displays vault
 const saveNewData = async (key) => {
@@ -193,13 +186,15 @@ const saveNewData = async (key) => {
         return;
     }
     
+    console.log('saving data');
     const form = document.querySelector('#newPwdForm');
 
-    const title = form.newTitle.value;
-    const username = form.newUsername.value;
-    const password = encrypt(form.newPwd.value, key).toString();
+    
+    console.log('about to encrypt');
 
-    console.log(password);
+    const title = form.newTitle.value;
+    const username = encrypt(form.newUsername.value, key).toString();
+    const password = encrypt(form.newPwd.value, key).toString();
 
    
     // allEntries is a semi-colon separated string 
@@ -310,6 +305,14 @@ const renderNewPass = async () => {
     newForm.addEventListener('submit', (event) => {
         event.preventDefault();
         // validate input
+        try {
+            inputValid(newForm.newTitle.value, 'Title');
+            inputValid(newForm.newUsername.value, 'Username');
+            inputValid(newForm.newPwd.value, 'Password');
+        } catch (err) {
+            alert(err);
+            return;
+        }
 
         // open modal
         passwordGateway(user, "saveNewData", []);
@@ -376,7 +379,8 @@ const renderEntryDetails = async (key, title) => {
     // retrieve relevant data from storage
     const entryObj = await getVaultData(user, title);
 
-    // unencrypt the password
+    // unencrypt the username and password
+    let username = decrypt(entryObj.username, key).toString(CryptoJS.enc.Utf8);
     let password = decrypt(entryObj.password, key).toString(CryptoJS.enc.Utf8);
     console.log(password);
 
@@ -387,7 +391,7 @@ const renderEntryDetails = async (key, title) => {
     newForm.setAttribute('id', 'displayPwdForm');
 
     const userDetails = createFormField('Username', 'text', 'usernameDiv', 'displayUsername', '');
-    userDetails.querySelector('input').setAttribute('value', entryObj['username']);
+    userDetails.querySelector('input').setAttribute('value', username);
     
     const pwdDetails = document.createElement('div');
     setAttributes(pwdDetails, {

@@ -101,3 +101,29 @@ export const decrypt = (ciphertext, key) => {
     });
     return decrypted;
 }
+
+export const inputValid = (input, inputType) => {
+    const invalidChars = new RegExp('[<>;\'"#=]');
+    if (input.length < 1) {
+        throw `${inputType} must not be empty`;
+    } else if (invalidChars.test(input)) {
+        throw `${inputType} cannot contain special characters <>;'\"#=`;
+    }
+    return true;
+}
+
+export const masterPwdValid = (input) => {
+    inputValid(input, "Master password");
+    const lowercase = new RegExp('[a-z]');
+    const uppercase = new RegExp('[A-Z]');
+    const numeric = new RegExp('[0-9]');
+    if (input.length < 8) {
+        throw "Master password must be at least 8 characters";
+    } else if (!lowercase.test(input)) {
+        throw "Master password must contain at least one lowercase letter";
+    } else if (!uppercase.test(input)) {
+        throw "Master password must contain at least one uppercase letter";
+    } else if (!numeric.test(input)) {
+        throw "Master password must contain at least one number";
+    }
+}

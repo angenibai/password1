@@ -1,4 +1,4 @@
-import { authenticate, createLoginSalt, passToLoginHash } from './helpers.js';
+import { authenticate, createLoginSalt, inputValid, masterPwdValid, passToLoginHash } from './helpers.js';
 import { setToLocal, getFromLocal, removeFromLocal } from './storage.js';
 
 
@@ -59,6 +59,13 @@ const onRego = async (regoForm) => {
     }
 
     // should do validation for username and password
+    try {
+        inputValid(regoForm.regoUser.value, "Username");
+        masterPwdValid(regoForm.regoPwd.value, "Password");
+    } catch (err) {
+        alert(err);
+        return;
+    }
 
     // ready to add new user
     users += `${username};`;
@@ -105,6 +112,14 @@ const onLogin = async (loginForm) => {
     users = users.allUsers ? users.allUsers : '';
 
     const userAttempt = loginForm.loginUser.value;
+
+    try {
+        inputValid(userAttempt, 'Username');
+        inputValid(loginForm.loginPwd.value, 'Password');
+    } catch (err) {
+        alert(err);
+        return;
+    }
 
     if (!users.includes(`${userAttempt};`)) {
         alert('User not found');
