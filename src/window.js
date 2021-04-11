@@ -1,6 +1,7 @@
-import { authenticate, createMasterKey, decrypt, encrypt, inputValid, randomString, setAttributes } from './helpers.js';
+import { authenticate, createMasterKey, decrypt, encrypt, inputValid, setAttributes } from './helpers.js';
 import { getFromLocal, getVaultData, setToLocal } from './storage.js';
 import { makePrimaryBtn, createFormField } from './components.js';
+import { chachaString } from './chacha.js';
 const CryptoJS = require('crypto-js');
 
 
@@ -318,7 +319,7 @@ const renderNewPass = async () => {
     generate.appendChild(syncIcon);
     generate.addEventListener('click', (e) => {
         checkLoggedIn();
-        inputGroup.querySelector('#newPwd').value = randomString(16);
+        inputGroup.querySelector('#newPwd').value = chachaString(16);
     });
     inputGroup.appendChild(generate);
 

@@ -130,6 +130,6 @@ export const masterPwdValid = (input) => {
 
 export const randomString = (length) => {
     let string = CryptoJS.lib.WordArray.random(length);
-    string = string.toString(CryptoJS.enc.Base64)
+    string = string.toString(CryptoJS.enc.Base64);
     return string.slice(0, -2);
 }
