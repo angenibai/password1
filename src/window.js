@@ -1,9 +1,10 @@
 import { authenticate, createMasterKey, decrypt, encrypt, inputValid, setAttributes } from './helpers.js';
-import { getFromLocal, getVaultData, setToLocal } from './storage.js';
+import { addNewEntry, addVaultData, getAllEntries, getFromLocal, getVaultData, needsAuth, setAuthTime, deleteVaultEntry } from './storage.js';
 import { makePrimaryBtn, createFormField } from './components.js';
 import { chachaString } from './chacha.js';
 const CryptoJS = require('crypto-js');
 
+let key = "";
 
 // resets the main element to contain an empty main div container
 const resetMain = () => {
@@ -56,16 +57,17 @@ const onSubmitPwd = async (modal, user, successFunc, args) => {
     console.log('authentication');
     if (authenticated) {
         console.log('authenticated');
-        const key = createMasterKey(form.reenteredPwd.value, user);
+        key = createMasterKey(form.reenteredPwd.value, user);
+        await setAuthTime();
         console.log('key found');
         form.reenteredPwd.value = '';
         modal.hide();
         switch (successFunc) {
-            case 'saveNewData': saveNewData(key);
+            case 'saveNewData': saveNewData();
             break;
             case 'deleteEntry': deleteEntry(args[0]);
             break;
-            case 'renderEntryDetails': renderEntryDetails(key, args[0]);
+            case 'renderEntryDetails': renderEntryDetails(args[0]);
             break;
             default: alert("Didn't hard-code this oops");
         }
@@ -109,7 +111,20 @@ const makeModalForm = () => {
     return form;
 }
 
-const passwordGateway = (user, successFunc, args) => {
+const passwordGateway = async (user, successFunc, args) => {
+    let authed = await needsAuth(Date.now());
+    if (!authed) {
+        switch (successFunc) {
+            case 'saveNewData': saveNewData();
+            break;
+            case 'deleteEntry': deleteEntry(args[0]);
+            break;
+            case 'renderEntryDetails': renderEntryDetails(args[0]);
+            break;
+            default: alert("Didn't hard-code this oops");
+        } 
+        return;
+    }
 
     const modalBody = document.querySelector('.modal-body');
     while (modalBody.lastChild) {
@@ -149,8 +164,6 @@ const renderWelcome = async () => {
     const welcomeHeading = document.createElement('h1');
     welcomeHeading.setAttribute('class', 'card-title');
 
-    
-
     const welcomeText = document.createTextNode('Welcome to your vault');
     welcomeHeading.appendChild(welcomeText);
 
@@ -166,7 +179,7 @@ const renderWelcome = async () => {
     const btn2 = makePrimaryBtn('button', 'welcome-vault', 'Go to your passwords');
     btn2.classList.add('btn-block', 'col-sm');
     btn2.addEventListener('click', () => {
-        renderVault(user);
+        renderVault();
     });
 
     cardBody.appendChild(welcomeHeading);
@@ -181,7 +194,7 @@ const renderWelcome = async () => {
 
 
 // saves new data to local storage and displays vault
-const saveNewData = async (key) => {
+const saveNewData = async () => {
     const user = await checkLoggedIn();
     if (!user) {
         return;
@@ -189,7 +202,6 @@ const saveNewData = async (key) => {
     
     console.log('saving data');
     const form = document.querySelector('#newPwdForm');
-
     
     console.log('about to encrypt');
 
@@ -197,33 +209,12 @@ const saveNewData = async (key) => {
     const username = encrypt(form.newUsername.value, key).toString();
     const password = encrypt(form.newPwd.value, key).toString();
 
-   
-    // allEntries is a semi-colon separated string 
-    // this should be hashed or something
-    const userEntries = `${user}AllEntries`;
-    let r = await getFromLocal(userEntries);
-    let allEntries = r[userEntries] ? r[userEntries] : "";
-
-    if (allEntries.includes(`${title};`)) {
-        // the title we're looking for does exist
-        alert("Title already exists");
-        
-    } else {
-        // add to the vault
-        const userVault = `${user}Vault`;
-        let r = await getFromLocal(userVault);
-        let vault = r[userVault];
-        if (vault) {
-            vault[title] = {username, password};
-        } else {
-            vault = {
-                [title]: {username, password}
-            };
-        }
-        await setToLocal(userVault, vault);
-
-        allEntries += `${title};`;
-        await setToLocal(userEntries, allEntries);
+    try {
+        await addNewEntry(user, title, key);
+        await addVaultData(user, title, username, password);
+    } catch (err) {
+        alert(err);
+        return;
     }
     renderVault();
 }
@@ -234,25 +225,8 @@ const deleteEntry = async (toDel) => {
         return;
     }
 
-    const userEntries = `${user}AllEntries`;
-    let r = await getFromLocal(userEntries);
-    let allEntries = r[userEntries] ? r[userEntries] : "";
-
-    if (allEntries.includes(`${toDel};`)) {
-        // can delete this entry
-        // delete from vault
-        const userVault = `${user}Vault`;
-        let r = await getFromLocal(userVault);
-        let vault = r[userVault];
-        delete vault[toDel];
-        await setToLocal(userVault, vault);
-
-        // remove from all entries
-        allEntries = allEntries.replace(`${toDel};`, '');
-        await setToLocal(userEntries, allEntries);
-    } else {
-        alert("Title does not exist");
-    }
+    await deleteVaultEntry(user, toDel, key);
+    
     renderVault();
 }
 
@@ -384,7 +358,7 @@ const createPageButton = (text) => {
 }
 
 // renders the page which contains details for a particular entry
-const renderEntryDetails = async (key, title) => {
+const renderEntryDetails = async (title) => {
     const user = await checkLoggedIn();
     if (!user) {
         return;
@@ -490,7 +464,6 @@ const renderEntryDetails = async (key, title) => {
         // require password to delete item
         passwordGateway(user, "deleteEntry", [title]);
 
-        // add a thing to vault page about item being deleted
     });
     cardBody.appendChild(deleteButton);
     // edit option?
@@ -515,10 +488,8 @@ const createVaultEntry = (title, user) => {
     // when this vault entry gets clicked, it will serve the details for that entry
     entryItem.addEventListener('click', (event) => {
         event.preventDefault();
-
-        // TODO put this behind password
         passwordGateway(user, "renderEntryDetails", [title]);
-    })
+    });
 
     return entryItem;
 
@@ -562,22 +533,22 @@ const renderVault = async () => {
         'id': 'vaultEntriesList'
     });
     
-    const userVault = `${user}Vault`;
-    let r = await getFromLocal(userVault);
-    let vault = r[userVault];
-    console.log('rendering vault');
-    console.log(vault);
-    if (vault) {
+
+    let allEntries;
+    try {
+        allEntries = await getAllEntries(user, key);
+        console.log('after receiving entries');
+        console.log(allEntries);
         let newEntry;
-        Object.keys(vault).sort().forEach((title) => {
+        allEntries.sort().forEach((title) => {
             newEntry = createVaultEntry(title, user);
             entryGroup.appendChild(newEntry);
         });
+    } catch (err) {
+        alert(err);
     }
-    
 
     vaultCard.appendChild(entryGroup);
-
 
     // create nav button group
     const pageNav = document.createElement('nav');
