@@ -1,6 +1,8 @@
 import { decrypt, encrypt } from "./helpers";
 const CryptoJS = require('crypto-js');
 
+const TIMEOUT = 300000;
+
 export const setToLocal = async (key, val) => {
     await new Promise(resolve => {
         chrome.storage.local.set({[key]: val}, (r) => {
@@ -56,7 +58,7 @@ export const needsAuth = async (cur_time) => {
         console.log('no last auth')
         return true;
     }
-    if ((parseInt(cur_time) - parseInt(r.currentSession.lastAuth)) > 30000) {
+    if ((parseInt(cur_time) - parseInt(r.currentSession.lastAuth)) > TIMEOUT) {
         console.log('far away');
         console.log(`${parseInt(cur_time) - parseInt(r.currentSession.lastAuth)}`)
         return true;
@@ -159,7 +161,6 @@ export const deleteVaultEntry = async (user, title, key) => {
     let r = await getFromLocal(userVault);
     if (!r[userVault]) {
         throw "User vault not found";
-        return;
     }
     let vault = r[userVault];
     const title_hash = CryptoJS.SHA256(title).toString(CryptoJS.enc.hex);

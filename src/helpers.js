@@ -51,7 +51,6 @@ export const setAttributes = (element, attributeObj) => {
 }
 
 export const createLoginSalt = (username) => {
-    console.log('creating login salt');
     return CryptoJS.PBKDF2(username, Date.now().toString(), {
         keySize: 256/DIVISOR,
         iterations: 1
@@ -59,16 +58,14 @@ export const createLoginSalt = (username) => {
 }
 
 export const createMasterKey = (secret, salt) => {
-    console.log('creating master key');
     return CryptoJS.PBKDF2(secret, salt, {
         keySize: 256/DIVISOR,
         iterations: 100100
     }).toString(CryptoJS.enc.Hex);
 }
 
-export const passToLoginHash = (secret, salt, user) => {
-    console.log('creating login hash');
-    return CryptoJS.PBKDF2(createMasterKey(secret, user), salt, {
+export const keyToLoginHash = (key, salt) => {
+    return CryptoJS.PBKDF2(key, salt, {
         keySize: 256/DIVISOR,
         iterations: 100000
     }).toString(CryptoJS.enc.Hex);
@@ -82,10 +79,9 @@ export const authenticate = async (tryPass, user) => {
         alert(err);
         return;
     }
-
-    const curHash = passToLoginHash(tryPass, loginAuth.salt, user);
-
-    return loginAuth.hash === curHash ? loginAuth : false;
+    const key = createMasterKey(tryPass, user);
+    const curHash = keyToLoginHash(key, loginAuth.salt);
+    return loginAuth.hash === curHash ? key : "";
 }
 
 export const encrypt = (message, key) => {
@@ -132,4 +128,11 @@ export const randomString = (length) => {
     let string = CryptoJS.lib.WordArray.random(length);
     string = string.toString(CryptoJS.enc.Base64);
     return string.slice(0, -2);
+}
+
+export const passToLoginHash = (secret, salt, user) => {
+    return CryptoJS.PBKDF2(createMasterKey(secret, user), salt, {
+        keySize: 256/DIVISOR,
+        iterations: 100000
+    }).toString(CryptoJS.enc.Hex);
 }

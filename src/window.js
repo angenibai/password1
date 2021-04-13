@@ -53,11 +53,10 @@ const onSubmitPwd = async (modal, user, successFunc, args) => {
     console.log(successFunc);
     const form = document.forms.reenterPwd;
 
-    const authenticated = await authenticate(form.reenteredPwd.value, user);
+    const key = await authenticate(form.reenteredPwd.value, user);
     console.log('authentication');
-    if (authenticated) {
+    if (key) {
         console.log('authenticated');
-        key = createMasterKey(form.reenteredPwd.value, user);
         await setAuthTime();
         console.log('key found');
         form.reenteredPwd.value = '';
@@ -125,6 +124,7 @@ const passwordGateway = async (user, successFunc, args) => {
         } 
         return;
     }
+    key = "";
 
     const modalBody = document.querySelector('.modal-body');
     while (modalBody.lastChild) {
